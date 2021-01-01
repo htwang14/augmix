@@ -29,6 +29,7 @@ import time
 
 import augmentations
 from models.cifar.allconv import AllConvNet
+from models.cifar.resnet import ResNet18, ResNet34
 import numpy as np
 from third_party.ResNeXt_DenseNet.models.densenet import densenet
 from third_party.ResNeXt_DenseNet.models.resnext import resnext29
@@ -53,8 +54,8 @@ parser.add_argument(
     '--model',
     '-m',
     type=str,
-    default='wrn',
-    choices=['wrn', 'allconv', 'densenet', 'resnext'],
+    default='rn18',
+    choices=['wrn', 'allconv', 'rn18', 'rn34', 'densenet', 'resnext'],
     help='Choose architecture.')
 # Optimization options
 parser.add_argument(
@@ -294,9 +295,10 @@ def main():
   train_transform = transforms.Compose(
       [transforms.RandomHorizontalFlip(),
        transforms.RandomCrop(32, padding=4)])
-  preprocess = transforms.Compose(
-      [transforms.ToTensor(),
-       transforms.Normalize([0.5] * 3, [0.5] * 3)])
+  # preprocess = transforms.Compose(
+  #     [transforms.ToTensor(),
+  #      transforms.Normalize([0.5] * 3, [0.5] * 3)])
+  preprocess = transforms.Compose([transforms.ToTensor()])
   test_transform = preprocess
 
   if args.dataset == 'cifar10':
@@ -304,14 +306,14 @@ def main():
         './data/cifar', train=True, transform=train_transform, download=True)
     test_data = datasets.CIFAR10(
         './data/cifar', train=False, transform=test_transform, download=True)
-    base_c_path = './data/cifar/CIFAR-10-C/'
+    base_c_path = '/home/haotao/CIFAR-10-C/'
     num_classes = 10
   else:
     train_data = datasets.CIFAR100(
         './data/cifar', train=True, transform=train_transform, download=True)
     test_data = datasets.CIFAR100(
         './data/cifar', train=False, transform=test_transform, download=True)
-    base_c_path = './data/cifar/CIFAR-100-C/'
+    base_c_path = '/home/haotao/CIFAR-100-C/'
     num_classes = 100
 
   train_data = AugMixDataset(train_data, preprocess, args.no_jsd)
@@ -336,6 +338,10 @@ def main():
     net = WideResNet(args.layers, num_classes, args.widen_factor, args.droprate)
   elif args.model == 'allconv':
     net = AllConvNet(num_classes)
+  elif args.model == 'rn18':
+    net = ResNet18()
+  elif args.model == 'rn34':
+    net = ResNet34()
   elif args.model == 'resnext':
     net = resnext29(num_classes=num_classes)
 
@@ -379,13 +385,23 @@ def main():
           1,  # lr_lambda computes multiplicative factor
           1e-6 / args.learning_rate))
 
+  save_str = '%s-width%d-e%d' % (args.model, args.mixture_width, args.epochs)
+  if args.no_jsd:
+    save_str += '-nojsd'
+  else:
+    save_str += '-jsd'
+  args.save = os.path.join(args.save, save_str)
   if not os.path.exists(args.save):
     os.makedirs(args.save)
   if not os.path.isdir(args.save):
     raise Exception('%s is not a dir' % args.save)
 
-  log_path = os.path.join(args.save,
-                          args.dataset + '_' + args.model + '_training_log.csv')
+  if args.no_jsd:
+    log_path = os.path.join(args.save,
+                            args.dataset + '_' + args.model + '_w%d' % args.mixture_width + '_no-jsd_training_log.csv')
+  else:
+    log_path = os.path.join(args.save,
+                            args.dataset + '_' + args.model + '_w%d' % args.mixture_width + '_training_log.csv')
   with open(log_path, 'w') as f:
     f.write('epoch,time(s),train_loss,test_loss,test_error(%)\n')
 

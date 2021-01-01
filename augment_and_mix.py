@@ -53,7 +53,7 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
   """
   ws = np.float32(
       np.random.dirichlet([alpha] * width))
-  m = np.float32(np.random.beta(alpha, alpha))
+  m = np.float32(np.random.beta(alpha, alpha)) # this is just uniform distribution
 
   mix = np.zeros_like(image)
   for i in range(width):
