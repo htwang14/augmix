@@ -68,7 +68,7 @@ parser.add_argument(
     help='Initial learning rate.')
 parser.add_argument(
     '--batch-size', '-b', type=int, default=128, help='Batch size.')
-parser.add_argument('--eval-batch-size', type=int, default=1000)
+parser.add_argument('--eval-batch-size', '--tb', type=int, default=1000)
 parser.add_argument('--momentum', type=float, default=0.9, help='Momentum.')
 parser.add_argument(
     '--decay',
@@ -390,7 +390,7 @@ def main():
     save_str += '-nojsd'
   else:
     save_str += '-jsd'
-  args.save = os.path.join(args.save, save_str)
+  args.save = os.path.join(args.save, args.dataset, save_str)
   if not os.path.exists(args.save):
     os.makedirs(args.save)
   if not os.path.isdir(args.save):
